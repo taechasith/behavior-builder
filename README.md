@@ -1,5 +1,5 @@
 # Behavior Builder (FBM):  
-A Privacy-First, Web-Based Tool for Quantitative Research in Digital Habit Formation
+Web-Based Tool for Quantitative Research in Cyborg Bahavior Formation
 
 **Taechasith Kangkhuntod**  
 Python1 Module, Harbour.Space Institute of Technology @UTCC, 2025  
