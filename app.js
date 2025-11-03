@@ -1,187 +1,487 @@
-// ---------- Data Models ----------
+/* =============== Data Models =============== */
 class Behavior {
-  constructor(id, title, anchor, tiny) {
+  constructor(id, title, anchor, tiny){
     this.id = id;
     this.title = title;
-    this.anchor = anchor;
-    this.tiny = tiny;
+    this.anchor = anchor || "";
+    this.tiny = tiny || "";
+    this.createdAt = new Date().toISOString();
   }
 }
-
 class Entry {
-  constructor(id, behaviorId, dateISO, motivation, ability, did, note) {
+  constructor(id, behaviorId, dateISO, motivation, ability, did, note){
     this.id = id;
     this.behaviorId = behaviorId;
-    this.dateISO = dateISO;
-    this.motivation = motivation;
-    this.ability = ability;
-    this.did = did;
-    this.note = note;
+    this.dateISO = dateISO; // YYYY-MM-DD
+    this.motivation = motivation; // 0..10
+    this.ability = ability;       // 0..10
+    this.did = did;               // "yes" | "no"
+    this.note = note || "";
   }
 }
+const store = loadStore();
 
-const store = JSON.parse(localStorage.getItem("fbmStore")) || {
-  behaviors: [],
-  entries: []
+/* =============== DOM =============== */
+const els = {
+  today: document.getElementById("today"),
+  behaviorList: document.getElementById("behaviorList"),
+  addBehaviorBtn: document.getElementById("addBehaviorBtn"),
+  behaviorModal: document.getElementById("behaviorModal"),
+  behaviorModalTitle: document.getElementById("behaviorModalTitle"),
+  behaviorForm: document.getElementById("behaviorForm"),
+  behaviorTitle: document.getElementById("behaviorTitle"),
+  behaviorAnchor: document.getElementById("behaviorAnchor"),
+  behaviorTiny: document.getElementById("behaviorTiny"),
+  saveBehaviorBtn: document.getElementById("saveBehaviorBtn"),
+
+  selectedBehaviorName: document.getElementById("selectedBehaviorName"),
+
+  motivation: document.getElementById("motivation"),
+  ability: document.getElementById("ability"),
+  motivationVal: document.getElementById("motivationVal"),
+  abilityVal: document.getElementById("abilityVal"),
+  didToggle: document.getElementById("didToggle"),
+  note: document.getElementById("note"),
+  saveEntryBtn: document.getElementById("saveEntryBtn"),
+  suggestionBox: document.getElementById("suggestionBox"),
+
+  svg: document.getElementById("fbmGraph"),
+  historyTableBody: document.querySelector("#historyTable tbody"),
+  filterBtns: Array.from(document.querySelectorAll(".filter-btn")),
+
+  exportBtn: document.getElementById("exportBtn"),
+  importBtn: document.getElementById("importBtn"),
+  importFile: document.getElementById("importFile"),
+  resetBtn: document.getElementById("resetBtn"),
+  confirmModal: document.getElementById("confirmModal"),
+  cancelReset: document.getElementById("cancelReset"),
+  confirmReset: document.getElementById("confirmReset"),
 };
 
-function saveStore() {
-  localStorage.setItem("fbmStore", JSON.stringify(store));
+let uiState = {
+  selectedBehaviorId: null,
+  editBehaviorId: null,
+  historyRange: 7 // days; or "all"
+};
+
+/* =============== Init =============== */
+displayToday();
+renderBehaviors();
+syncBehaviorSelectionAfterRender();
+wireControls();
+refreshCenterAndRight();
+
+/* =============== Store Helpers =============== */
+function loadStore(){
+  const raw = localStorage.getItem("fbmStore_v2");
+  if(raw){
+    try { return JSON.parse(raw); } catch { /* fallthrough */ }
+  }
+  return { behaviors: [], entries: [] };
+}
+function saveStore(){
+  localStorage.setItem("fbmStore_v2", JSON.stringify(store));
 }
 
-// ---------- UI Elements ----------
-const behaviorSelect = document.getElementById("behaviorSelect");
-const suggestionBox = document.getElementById("suggestionBox");
-const historyTable = document.querySelector("#historyTable tbody");
-const svg = document.getElementById("fbmGraph");
+/* =============== UI Wiring =============== */
+function wireControls(){
+  els.addBehaviorBtn.addEventListener("click", () => openBehaviorModal());
+  els.behaviorForm.addEventListener("submit", onSaveBehavior);
 
-// ---------- Behavior CRUD ----------
-function refreshBehaviorSelect() {
-  behaviorSelect.innerHTML = "";
-  store.behaviors.forEach(b => {
-    const opt = document.createElement("option");
-    opt.value = b.id;
-    opt.textContent = b.title;
-    behaviorSelect.appendChild(opt);
+  els.motivation.addEventListener("input", () => {
+    els.motivationVal.textContent = els.motivation.value;
+  });
+  els.ability.addEventListener("input", () => {
+    els.abilityVal.textContent = els.ability.value;
+  });
+
+  els.didToggle.addEventListener("click", toggleDid);
+  els.didToggle.addEventListener("keydown", (e)=>{
+    if(e.key === " " || e.key === "Enter"){ e.preventDefault(); toggleDid(); }
+  });
+
+  els.saveEntryBtn.addEventListener("click", saveEntry);
+
+  els.exportBtn.addEventListener("click", exportData);
+  els.importBtn.addEventListener("click", () => els.importFile.click());
+  els.importFile.addEventListener("change", importData);
+
+  els.resetBtn.addEventListener("click", ()=> els.confirmModal.showModal());
+  els.cancelReset.addEventListener("click", ()=> els.confirmModal.close());
+  els.confirmReset.addEventListener("click", doReset);
+
+  els.filterBtns.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      els.filterBtns.forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const r = btn.getAttribute("data-range");
+      uiState.historyRange = (r === "all") ? "all" : parseInt(r,10);
+      renderHistory();
+    });
   });
 }
 
-document.getElementById("addBehaviorBtn").onclick = () => {
-  const title = document.getElementById("behaviorTitle").value.trim();
-  const anchor = document.getElementById("behaviorAnchor").value.trim();
-  const tiny = document.getElementById("behaviorTiny").value.trim();
-  if (!title) return alert("Please enter a behavior title!");
-  const id = Date.now();
-  store.behaviors.push(new Behavior(id, title, anchor, tiny));
-  saveStore();
-  refreshBehaviorSelect();
-};
+/* =============== Header =============== */
+function displayToday(){
+  const d = new Date();
+  const opts = { year:"numeric", month:"short", day:"numeric" };
+  els.today.textContent = d.toLocaleDateString(undefined, opts);
+}
 
-// ---------- Entry Save ----------
-document.getElementById("saveEntryBtn").onclick = () => {
-  const behaviorId = +behaviorSelect.value;
-  if (!behaviorId) return alert("Select a behavior first.");
-  const motivation = +document.getElementById("motivation").value;
-  const ability = +document.getElementById("ability").value;
-  const did = document.getElementById("did").value;
-  const note = document.getElementById("note").value.trim();
-  if (isNaN(motivation) || isNaN(ability)) return alert("Enter M and A numbers!");
+/* =============== Behaviors =============== */
+function renderBehaviors(){
+  els.behaviorList.innerHTML = "";
+  if(store.behaviors.length === 0){
+    const li = document.createElement("li");
+    li.className = "beh-item";
+    li.innerHTML = `<div>No behaviors yet</div><div></div>`;
+    els.behaviorList.appendChild(li);
+    return;
+  }
+
+  store.behaviors
+    .slice()
+    .sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt))
+    .forEach(b=>{
+      const li = document.createElement("li");
+      li.className = "beh-item";
+      li.tabIndex = 0;
+
+      const left = document.createElement("div");
+      left.innerHTML = `<strong>${escapeHtml(b.title)}</strong><br/>
+        <span class="muted">${escapeHtml(b.anchor || "No anchor")}</span>`;
+
+      const right = document.createElement("div");
+      right.className = "beh-actions";
+      const selectBtn = document.createElement("button");
+      selectBtn.className = "icon-btn";
+      selectBtn.title = "Select";
+      selectBtn.textContent = "✅";
+      selectBtn.addEventListener("click", ()=>{
+        uiState.selectedBehaviorId = b.id;
+        refreshCenterAndRight();
+        highlightSelected(li);
+      });
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "icon-btn";
+      editBtn.title = "Edit";
+      editBtn.textContent = "✏️";
+      editBtn.addEventListener("click", ()=>{
+        openBehaviorModal(b);
+      });
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.title = "Delete";
+      delBtn.textContent = "🗑️";
+      delBtn.addEventListener("click", ()=>{
+        if(confirm(`Delete behavior "${b.title}" and its entries?`)){
+          // delete entries for this behavior
+          store.entries = store.entries.filter(e=> e.behaviorId !== b.id);
+          // delete behavior
+          store.behaviors = store.behaviors.filter(x=> x.id !== b.id);
+          saveStore();
+          if(uiState.selectedBehaviorId === b.id) uiState.selectedBehaviorId = null;
+          renderBehaviors();
+          refreshCenterAndRight();
+        }
+      });
+
+      right.append(selectBtn, editBtn, delBtn);
+      li.append(left, right);
+      li.addEventListener("click", (e)=>{
+        if(e.target.closest(".icon-btn")) return;
+        uiState.selectedBehaviorId = b.id;
+        refreshCenterAndRight();
+        highlightSelected(li);
+      });
+      els.behaviorList.appendChild(li);
+
+      // highlight if selected
+      if(uiState.selectedBehaviorId === b.id) highlightSelected(li);
+    });
+}
+
+function highlightSelected(li){
+  Array.from(els.behaviorList.children).forEach(n=> n.style.outline = "none");
+  li.style.outline = "3px solid rgba(59,130,246,.25)";
+}
+
+function openBehaviorModal(behavior){
+  uiState.editBehaviorId = behavior ? behavior.id : null;
+  els.behaviorModalTitle.textContent = behavior ? "Edit Behavior" : "Add Behavior";
+  els.behaviorTitle.value  = behavior ? behavior.title  : "";
+  els.behaviorAnchor.value = behavior ? behavior.anchor : "";
+  els.behaviorTiny.value   = behavior ? behavior.tiny   : "";
+  els.behaviorModal.showModal();
+  setTimeout(()=> els.behaviorTitle.focus(), 10);
+}
+
+function onSaveBehavior(e){
+  e.preventDefault();
+  const title  = els.behaviorTitle.value.trim();
+  const anchor = els.behaviorAnchor.value.trim();
+  const tiny   = els.behaviorTiny.value.trim();
+  if(!title){ alert("Please provide a title."); return; }
+
+  if(uiState.editBehaviorId){
+    const b = store.behaviors.find(x=> x.id === uiState.editBehaviorId);
+    if(b){ b.title = title; b.anchor = anchor; b.tiny = tiny; }
+  }else{
+    const id = Date.now();
+    store.behaviors.push(new Behavior(id, title, anchor, tiny));
+    uiState.selectedBehaviorId = id;
+  }
+  saveStore();
+  els.behaviorModal.close();
+  renderBehaviors();
+  refreshCenterAndRight();
+}
+
+function syncBehaviorSelectionAfterRender(){
+  if(store.behaviors.length && !uiState.selectedBehaviorId){
+    uiState.selectedBehaviorId = store.behaviors[0].id;
+  }
+}
+
+/* =============== Daily Log =============== */
+function toggleDid(){
+  const off = els.didToggle.classList.toggle("off");
+  els.didToggle.setAttribute("aria-pressed", String(!off));
+  els.didToggle.textContent = off ? "No" : "Yes";
+}
+
+function saveEntry(){
+  if(!uiState.selectedBehaviorId){
+    alert("Select a behavior first.");
+    return;
+  }
+  const m = parseInt(els.motivation.value, 10);
+  const a = parseInt(els.ability.value, 10);
+  if(Number.isNaN(m) || Number.isNaN(a)){ alert("Set Motivation and Ability."); return; }
+
+  const did = els.didToggle.classList.contains("off") ? "no" : "yes";
+  const note = els.note.value.trim();
   const id = Date.now();
   const dateISO = new Date().toISOString().slice(0,10);
-  store.entries.push(new Entry(id, behaviorId, dateISO, motivation, ability, did, note));
+
+  store.entries.push(new Entry(id, uiState.selectedBehaviorId, dateISO, m, a, did, note));
   saveStore();
+
+  // UX sugar
+  els.saveEntryBtn.disabled = true;
+  els.saveEntryBtn.textContent = "Saved ✓";
+  setTimeout(()=>{
+    els.saveEntryBtn.disabled = false;
+    els.saveEntryBtn.textContent = "Save today";
+  }, 1200);
+
+  showSuggestions(m, a, did);
+  renderHistory();
   drawGraph();
-  showHistory();
-  showSuggestions(motivation, ability, did);
-};
-
-// ---------- Suggestions ----------
-function showSuggestions(m, a, did) {
-  let tips = [];
-  if (a < 4) tips.push("Simplify the task. Make it tiny and remove obstacles.");
-  if (m < 4 && a >= 6) tips.push("Boost motivation—pair the task with music or reward.");
-  if (did === "no" && m >= 6 && a >= 6) tips.push("Review your prompt—when will you do it?");
-  if (m >= 6 && a >= 6 && did === "yes") tips.push("Excellent! Consider making it slightly harder next week.");
-  if (did === "no") tips.push("No worries. Try again tomorrow and focus on consistency.");
-  suggestionBox.textContent = tips.join(" ");
 }
 
-// ---------- Graph ----------
-function drawGraph() {
-  svg.innerHTML = "";
-  const w = 400, h = 400;
-  const margin = 30;
-  const toX = a => margin + (a / 10) * (w - 2 * margin);
-  const toY = m => h - margin - (m / 10) * (h - 2 * margin);
+/* =============== Suggestions =============== */
+function showSuggestions(m, a, did){
+  const tips = [];
 
-  // Axes
-  const axis = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  axis.setAttribute("x1", margin);
-  axis.setAttribute("y1", h - margin);
-  axis.setAttribute("x2", w - margin);
-  axis.setAttribute("y2", margin);
-  axis.setAttribute("stroke", "#888");
-  axis.setAttribute("stroke-dasharray", "4");
-  svg.appendChild(axis);
-
-  // Action Line (threshold = 12 - A)
-  const actionLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  let pathData = "";
-  for (let a = 0; a <= 10; a += 0.5) {
-    const m = Math.max(0, 12 - a);
-    pathData += `${pathData ? "L" : "M"} ${toX(a)} ${toY(m)}`;
+  if(a < 4) tips.push("Make it tiny and remove friction (prep tools, pre-open app, 30-sec version).");
+  if(m < 4 && a >= 6) tips.push("Boost motivation: pair with music, small reward, or a vivid ‘why’. ");
+  if(did === "no" && m >= 6 && a >= 6) tips.push("Refine the prompt: attach to a strong anchor, place a visible cue.");
+  if(m >= 6 && a >= 6 && did === "yes") tips.push("Great! Consider nudging difficulty slightly next week.");
+  // streak check: 3 most recent failures on same behavior
+  const recent = store.entries
+    .filter(e=> e.behaviorId === uiState.selectedBehaviorId)
+    .slice(-3);
+  if(recent.length === 3 && recent.every(e=> e.did === "no")){
+    tips.push("Reset tiny scope (halve it) and isolate one barrier to fix.");
   }
-  actionLine.setAttribute("d", pathData);
-  actionLine.setAttribute("stroke", "#f59e0b");
-  actionLine.setAttribute("fill", "none");
-  actionLine.setAttribute("stroke-width", "2");
-  svg.appendChild(actionLine);
 
-  // Points
-  store.entries.forEach(e => {
-    const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    point.setAttribute("cx", toX(e.ability));
-    point.setAttribute("cy", toY(e.motivation));
-    point.setAttribute("r", 5);
-    const color = e.did === "yes" ? (aboveActionLine(e.motivation, e.ability) ? "green" : "gold") : "gray";
-    point.setAttribute("fill", color);
-    point.title = `${e.dateISO} M:${e.motivation} A:${e.ability} ${e.did}`;
-    svg.appendChild(point);
-  });
+  els.suggestionBox.textContent = tips.length ? tips.join(" ") : "Keep going — consistency compounds.";
+  els.suggestionBox.classList.remove("hidden");
 }
 
-function aboveActionLine(m, a) {
+/* =============== Graph (SVG) =============== */
+function drawGraph(){
+  const svg = els.svg;
+  svg.innerHTML = "";
+
+  const W = 420, H = 420, m = 36;
+  const toX = a => m + (a/10)*(W-2*m);
+  const toY = v => H - m - (v/10)*(H-2*m);
+
+  // axes
+  const axes = [
+    line(m, H-m, W-m, H-m, "#94a3b8", 1.2), // x
+    line(m, H-m, m,   m,   "#94a3b8", 1.2)  // y
+  ];
+  axes.forEach(el=> svg.appendChild(el));
+
+  // labels
+  svg.appendChild(text(W/2, H-6, "Ability ➜", "middle"));
+  svg.appendChild(text(12, H/2, "Motivation ▲", "middle", -90));
+
+  // action line (threshold = 12 - ability)
+  const d = [];
+  for(let a=0;a<=10;a+=0.25){
+    const mot = Math.max(0, 12 - a);
+    d.push(`${d.length?"L":"M"} ${toX(a)} ${toY(mot)}`);
+  }
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", d.join(" "));
+  path.setAttribute("stroke", "#f59e0b");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke-dasharray", "5,4");
+  svg.appendChild(path);
+
+  // points
+  const points = store.entries
+    .filter(e=> !uiState.selectedBehaviorId || e.behaviorId === uiState.selectedBehaviorId)
+    .slice(-200); // cap for performance
+
+  points.forEach(e=>{
+    const cx = toX(e.ability), cy = toY(e.motivation);
+    const successZone = aboveActionLine(e.motivation, e.ability);
+    const color = e.did === "yes" ? (successZone ? "#16a34a" : "#f59e0b") : "#475569";
+    const c = circle(cx, cy, 5, color);
+    c.setAttribute("opacity", ".9");
+    c.setAttribute("tabindex", "0");
+    c.setAttribute("role", "img");
+    c.setAttribute("aria-label", `${e.dateISO} M:${e.motivation} A:${e.ability} ${e.did}`);
+    c.title = `${e.dateISO} • M:${e.motivation} A:${e.ability} • ${e.did.toUpperCase()}`;
+    svg.appendChild(c);
+  });
+
+  // helpers
+  function line(x1,y1,x2,y2,stroke="#000",w=1){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","line");
+    el.setAttribute("x1", x1); el.setAttribute("y1", y1);
+    el.setAttribute("x2", x2); el.setAttribute("y2", y2);
+    el.setAttribute("stroke", stroke); el.setAttribute("stroke-width", w);
+    return el;
+  }
+  function circle(cx,cy,r,fill){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    el.setAttribute("cx", cx); el.setAttribute("cy", cy);
+    el.setAttribute("r", r); el.setAttribute("fill", fill);
+    el.style.transition = "r .15s ease";
+    el.addEventListener("mouseenter", ()=> el.setAttribute("r","7"));
+    el.addEventListener("mouseleave", ()=> el.setAttribute("r","5"));
+    return el;
+  }
+  function text(x,y,txt,anchor="start",rotate=0){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","text");
+    el.setAttribute("x", x); el.setAttribute("y", y);
+    el.setAttribute("text-anchor", anchor);
+    el.setAttribute("fill", "#334155");
+    el.setAttribute("font-size", "12");
+    if(rotate){ el.setAttribute("transform", `rotate(${rotate} ${x} ${y})`); }
+    el.textContent = txt;
+    return el;
+  }
+}
+
+function aboveActionLine(m, a){
   const threshold = 12 - a;
   return m >= threshold;
 }
 
-// ---------- History ----------
-function showHistory() {
-  historyTable.innerHTML = "";
-  store.entries.slice().reverse().forEach(e => {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${e.dateISO}</td><td>${e.motivation}</td><td>${e.ability}</td><td>${e.did}</td><td>${e.note}</td>`;
-    historyTable.appendChild(row);
+/* =============== History =============== */
+function renderHistory(){
+  const body = els.historyTableBody;
+  body.innerHTML = "";
+
+  let rows = store.entries
+    .filter(e=> !uiState.selectedBehaviorId || e.behaviorId === uiState.selectedBehaviorId)
+    .sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
+
+  if(uiState.historyRange !== "all"){
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - uiState.historyRange + 1);
+    const cISO = cutoff.toISOString().slice(0,10);
+    rows = rows.filter(e=> e.dateISO >= cISO);
+  }
+
+  const limited = rows.slice(0, 50); // show last 50 for readability
+
+  limited.forEach(e=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.dateISO}</td>
+      <td>${e.motivation}</td>
+      <td>${e.ability}</td>
+      <td>${e.did}</td>
+      <td>${escapeHtml(e.note || "")}</td>
+    `;
+    body.appendChild(tr);
   });
 }
 
-// ---------- Export / Import ----------
-document.getElementById("exportBtn").onclick = () => {
-  const blob = new Blob([JSON.stringify(store)], { type: "application/json" });
+/* =============== Export / Import / Reset =============== */
+function exportData(){
+  const blob = new Blob([JSON.stringify(store,null,2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "fbm-data.json";
   a.click();
-};
+}
 
-document.getElementById("importBtn").onclick = () => {
-  document.getElementById("importFile").click();
-};
-
-document.getElementById("importFile").onchange = e => {
+function importData(e){
   const file = e.target.files[0];
-  if (!file) return;
+  if(!file) return;
   const reader = new FileReader();
-  reader.onload = evt => {
-    try {
+  reader.onload = (evt)=>{
+    try{
       const data = JSON.parse(evt.target.result);
-      if (data.behaviors && data.entries) {
-        store.behaviors = data.behaviors;
-        store.entries = data.entries;
-        saveStore();
-        refreshBehaviorSelect();
-        drawGraph();
-        showHistory();
-        alert("Data imported successfully!");
+      if(!data || !Array.isArray(data.behaviors) || !Array.isArray(data.entries)){
+        alert("Invalid file structure."); return;
       }
-    } catch {
-      alert("Invalid file format!");
+      store.behaviors = data.behaviors;
+      store.entries = data.entries;
+      saveStore();
+      // reset selection if necessary
+      uiState.selectedBehaviorId = store.behaviors[0]?.id || null;
+      renderBehaviors();
+      refreshCenterAndRight();
+      alert("Imported successfully.");
+    }catch{
+      alert("Could not parse file.");
     }
   };
   reader.readAsText(file);
-};
+  // clear value so same file can be re-imported later
+  e.target.value = "";
+}
 
-// ---------- Init ----------
-refreshBehaviorSelect();
-drawGraph();
-showHistory();
+function doReset(){
+  store.behaviors = [];
+  store.entries = [];
+  saveStore();
+  uiState.selectedBehaviorId = null;
+  els.confirmModal.close();
+  renderBehaviors();
+  refreshCenterAndRight();
+}
+
+/* =============== Utilities =============== */
+function refreshCenterAndRight(){
+  // center panel header
+  if(uiState.selectedBehaviorId){
+    const b = store.behaviors.find(x=> x.id === uiState.selectedBehaviorId);
+    els.selectedBehaviorName.textContent = b ? b.title : "Unknown behavior";
+  }else{
+    els.selectedBehaviorName.textContent = "No behavior selected";
+  }
+  // clear inputs (soft reset)
+  els.note.value = "";
+  els.suggestionBox.classList.add("hidden");
+  // redraw
+  renderHistory();
+  drawGraph();
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}

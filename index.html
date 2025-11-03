@@ -1,70 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Behavior Builder (FBM)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Behavior Builder (FBM)</h1>
-    <button id="exportBtn">Export Data</button>
-    <button id="importBtn">Import Data</button>
-    <input type="file" id="importFile" hidden />
+  <header class="app-header">
+    <div class="title-wrap">
+      <h1>Behavior Builder <span class="subtle">(FBM)</span></h1>
+      <div id="today" class="today"></div>
+    </div>
+    <div class="header-actions">
+      <button id="exportBtn" class="btn ghost">📤 Export</button>
+      <button id="importBtn" class="btn ghost">📥 Import</button>
+      <button id="resetBtn"  class="btn danger">🗑 Reset</button>
+      <input id="importFile" type="file" accept="application/json" hidden />
+    </div>
   </header>
 
-  <main>
-    <section id="onboarding">
-      <h2>Create New Behavior</h2>
-      <input id="behaviorTitle" placeholder="Behavior name (e.g. Read 1 page)" />
-      <input id="behaviorAnchor" placeholder="Anchor (e.g. After I brush teeth...)" />
-      <input id="behaviorTiny" placeholder="Tiny version (e.g. Read 1 paragraph)" />
-      <button id="addBehaviorBtn">Add Behavior</button>
-      <select id="behaviorSelect"></select>
+  <main class="grid">
+    <!-- Left: Behaviors -->
+    <section class="card" id="behaviorsCard" aria-labelledby="behaviorsTitle">
+      <div class="card-header">
+        <h2 id="behaviorsTitle">My Behaviors</h2>
+        <button id="addBehaviorBtn" class="btn primary">➕ Add</button>
+      </div>
+      <ul id="behaviorList" class="behavior-list" role="list"></ul>
     </section>
 
-    <section id="daily">
-      <h2>Daily Check-In</h2>
-      <label>Motivation (0–10):</label>
-      <input type="number" id="motivation" min="0" max="10" />
-      <label>Ability (0–10):</label>
-      <input type="number" id="ability" min="0" max="10" />
-      <label>Did you do it?</label>
-      <select id="did">
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
-      <input id="note" placeholder="Optional note..." />
-      <button id="saveEntryBtn">Save Entry</button>
+    <!-- Center: Daily Log -->
+    <section class="card focus" id="dailyCard" aria-labelledby="dailyTitle">
+      <div class="card-header">
+        <h2 id="dailyTitle">Daily Log</h2>
+        <div id="selectedBehaviorName" class="badge">No behavior selected</div>
+      </div>
+
+      <div class="field">
+        <label for="motivation">💡 Motivation: <span id="motivationVal" class="pill">0</span></label>
+        <input id="motivation" type="range" min="0" max="10" step="1" value="0" />
+      </div>
+
+      <div class="field">
+        <label for="ability">⚙️ Ability: <span id="abilityVal" class="pill">0</span></label>
+        <input id="ability" type="range" min="0" max="10" step="1" value="0" />
+      </div>
+
+      <div class="toggle-row" role="group" aria-label="Did you do it?">
+        <span>🌱 Did you do it?</span>
+        <div class="toggle" id="didToggle" tabindex="0" aria-pressed="true">Yes</div>
+      </div>
+
+      <div class="field">
+        <label for="note">Note (optional)</label>
+        <input id="note" type="text" placeholder="Barrier, feeling, or context..." />
+      </div>
+
+      <button id="saveEntryBtn" class="btn big primary" aria-label="Save today's entry">Save today</button>
+
+      <div id="suggestionBox" class="suggestion hidden" aria-live="polite"></div>
     </section>
 
-    <section id="graph">
-      <h2>Fogg Behavior Model Graph</h2>
-      <svg id="fbmGraph" width="400" height="400"></svg>
+    <!-- Right: Graph -->
+    <section class="card" id="graphCard" aria-labelledby="graphTitle">
+      <div class="card-header">
+        <h2 id="graphTitle">FBM Graph</h2>
+        <div class="legend">
+          <span class="dot success"></span> success
+          <span class="dot borderline"></span> borderline
+          <span class="dot fail"></span> fail
+        </div>
+      </div>
+      <div class="svg-wrap">
+        <svg id="fbmGraph" viewBox="0 0 420 420" width="420" height="420" role="img" aria-label="Fogg Behavior Model graph"></svg>
+      </div>
     </section>
 
-    <section id="suggestions">
-      <h2>Suggestions</h2>
-      <div id="suggestionBox"></div>
-    </section>
-
-    <section id="history">
-      <h2>History</h2>
-      <table id="historyTable">
-        <thead>
-          <tr>
-            <th>Date</th><th>M</th><th>A</th><th>Did</th><th>Note</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <!-- Bottom: History -->
+    <section class="card span-3" id="historyCard" aria-labelledby="historyTitle">
+      <div class="card-header">
+        <h2 id="historyTitle">Recent History</h2>
+        <div class="filters">
+          <button data-range="7"  class="btn ghost small filter-btn active">7d</button>
+          <button data-range="30" class="btn ghost small filter-btn">30d</button>
+          <button data-range="all" class="btn ghost small filter-btn">All</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>M</th><th>A</th><th>Did</th><th>Note</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="fade-mask"></div>
+      </div>
     </section>
   </main>
 
-  <footer>
-    <p>All data stored locally. Ethical suggestions only, no medical advice.</p>
+  <footer class="app-footer">
+    Your data stays private on this device. Be kind to yourself — grow ability one tiny step at a time. 🌱
   </footer>
+
+  <!-- Add/Edit Behavior Modal -->
+  <dialog id="behaviorModal" class="modal">
+    <form method="dialog" class="modal-body" id="behaviorForm">
+      <h3 id="behaviorModalTitle">Add Behavior</h3>
+      <label class="field">
+        <span>Title</span>
+        <input id="behaviorTitle" required placeholder="Read 1 page" />
+      </label>
+      <label class="field">
+        <span>Anchor (prompt)</span>
+        <input id="behaviorAnchor" placeholder="After I brush teeth, I will..." />
+      </label>
+      <label class="field">
+        <span>Tiny version (≤ 2 minutes)</span>
+        <input id="behaviorTiny" placeholder="Read one paragraph" />
+      </label>
+      <menu class="modal-actions">
+        <button value="cancel" class="btn ghost">Cancel</button>
+        <button id="saveBehaviorBtn" value="default" class="btn primary">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Reset confirm -->
+  <dialog id="confirmModal" class="modal">
+    <div class="modal-body">
+      <h3>Reset all data?</h3>
+      <p>This deletes every behavior and entry stored in your browser.</p>
+      <menu class="modal-actions">
+        <button id="cancelReset" class="btn ghost">Cancel</button>
+        <button id="confirmReset" class="btn danger">Delete</button>
+      </menu>
+    </div>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
