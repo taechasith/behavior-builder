@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>FBM • Log Today</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="header">
+    <h1>Log Today <span class="badge" id="today"></span></h1>
+    <div>
+      <a class="btn ghost" href="dashboard.html">Back to dashboard</a>
+    </div>
+  </div>
+
+  <main class="centered">
+    <section class="card focus">
+      <h2>Focus-first logging</h2>
+      <p class="muted">History is hidden here to reduce bias. Save first; review later.</p>
+
+      <div class="field">
+        <label>Behavior</label>
+        <select id="behaviorSelect" style="padding:.65rem .8rem;border-radius:12px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);color:var(--ink)"></select>
+      </div>
+
+      <div class="field">
+        <label>💡 Motivation <span id="mVal" class="badge">0</span></label>
+        <input id="m" type="range" min="0" max="10" step="1" value="0"/>
+      </div>
+
+      <div class="field">
+        <label>⚙️ Ability <span id="aVal" class="badge">0</span></label>
+        <input id="a" type="range" min="0" max="10" step="1" value="0"/>
+      </div>
+
+      <div class="toggle-row">
+        <span>🌱 Did you do it?</span><div id="did" class="toggle" tabindex="0">Yes</div>
+      </div>
+
+      <div class="field"><label>Note (optional)</label><input id="note" placeholder="Barrier, feeling, or context..."/></div>
+
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button id="saveBtn" class="btn primary big">Save today</button>
+        <a class="btn ghost" href="dashboard.html">Review history</a>
+      </div>
+
+      <div id="tip" class="point-details" style="margin-top:12px;display:none"></div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/collect.js"></script>
+</body>
+</html>
