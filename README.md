@@ -122,7 +122,7 @@ Behavior Builder (FBM) is an open, scientifically principled tool for digital be
 
 Developed by **Taechasith Kangkhuntod**  
 For Python1 Module (2025)  
-Inspired by the Consumer Behavior module (2025)
+Inspired by the Consumer Behavior module (2025)  
 Harbour.Space Institute of Technology @UTCC 
 
 ---
