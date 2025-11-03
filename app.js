@@ -123,12 +123,6 @@ const els = {
   cancelReset: $("#cancelReset"),
   confirmReset: $("#confirmReset")
 };
-/* Mobile 100vh bug fix (sets --vh to real innerHeight) */
-function setVHVar(){
-  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-}
-window.addEventListener('resize', setVHVar);
-setVHVar();
 
 /* ========= Bootstrap ========= */
 init();
