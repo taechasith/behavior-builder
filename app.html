@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FBM • Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Behavior Builder <span class="subtle">(FBM)</span></h1>
+    <div class="nav">
+      <a class="btn ghost small" href="collect.html">Data Collection</a>
+      <button id="exportBtn" class="btn ghost small">Export</button>
+      <label class="btn ghost small" for="importFile">Import</label>
+      <input id="importFile" type="file" accept="application/json,text/csv" class="hidden" />
+      <button id="settingsBtn" class="btn ghost small">Settings</button>
+      <button id="logoutBtn" class="btn danger small">Log out</button>
+    </div>
+  </header>
+
+  <!-- ... (same markup you already have) ... -->
+
+  <script src="core.js"></script>
+  <script>
+    const C = FBMCore; const user = C.requireAuth();
+    // (the rest of the JS from your current app.html remains the same)
+  </script>
+</body>
+</html>
