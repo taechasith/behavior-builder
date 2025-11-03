@@ -63,7 +63,9 @@ body{
 
 .field{display:flex;flex-direction:column;margin:10px 0}
 .field > label{font-weight:600; margin-bottom:6px}
-.field > input[type="text"]{padding:.6rem .7rem;border:1px solid #e2e8f0;border-radius:10px}
+.field > input[type="text"], .field > input[type="email"], .field > input[type="password"]{
+  padding:.6rem .7rem;border:1px solid #e2e8f0;border-radius:10px
+}
 
 .pill{
   display:inline-flex;align-items:center;justify-content:center;
@@ -94,6 +96,7 @@ body{
 .btn.small{padding:.3rem .6rem}
 .btn.big{padding:.7rem 1.1rem; font-size:1.02rem}
 
+/* Lists */
 .behavior-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}
 .beh-item{
   display:flex;justify-content:space-between;align-items:center;
@@ -104,6 +107,7 @@ body{
   background:#f1f5f9;border:1px solid #e2e8f0;color:#0f172a;padding:.25rem .5rem;border-radius:999px;cursor:pointer
 }
 
+/* Graph */
 .svg-wrap{display:flex;justify-content:center;align-items:center}
 #fbmGraph{background:white;border:1px solid #e2e8f0;border-radius:10px}
 
@@ -127,10 +131,19 @@ body{
 @keyframes rise{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:translateY(0)}}
 
 /* Modal */
-.modal{border:none;border-radius:16px;padding:0;box-shadow:var(--shadow)}
+.modal{border:none;border-radius:16px;padding:0;box-shadow:var(--shadow);max-width:520px}
 .modal::backdrop{background:rgba(15,23,42,.3)}
-.modal-body{padding:16px 16px 8px;min-width:280px}
+.modal-body{padding:16px 16px 8px}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+
+.account-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.account-card{
+  display:flex;justify-content:space-between;align-items:center;
+  background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.6rem .7rem
+}
+.account-actions{display:flex;gap:6px}
+
+.muted{color:var(--muted);font-size:.92rem}
 
 /* Grid spans */
 .span-3{grid-column:1/-1}

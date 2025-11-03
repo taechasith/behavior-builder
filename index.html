@@ -13,10 +13,12 @@
       <div id="today" class="today"></div>
     </div>
     <div class="header-actions">
-      <button id="exportBtn" class="btn ghost">📤 Export</button>
+      <span id="currentUserBadge" class="badge">User: —</span>
+      <button id="switchUserBtn" class="btn ghost">👤 Switch User</button>
+      <button id="exportOptionsBtn" class="btn ghost">📤 Export</button>
       <button id="importBtn" class="btn ghost">📥 Import</button>
-      <button id="resetBtn"  class="btn danger">🗑 Reset</button>
-      <input id="importFile" type="file" accept="application/json" hidden />
+      <button id="resetBtn"  class="btn danger">🗑 Reset User Data</button>
+      <input id="importFile" type="file" accept="application/json,text/csv" hidden />
     </div>
   </header>
 
@@ -128,11 +130,68 @@
     </form>
   </dialog>
 
+  <!-- Export options -->
+  <dialog id="exportModal" class="modal">
+    <form method="dialog" class="modal-body" id="exportForm">
+      <h3>Export Options</h3>
+      <label class="field"><input type="checkbox" id="optCSV" checked /> Export tidy CSV (entries)</label>
+      <label class="field"><input type="checkbox" id="optJSON" checked /> Export JSON package (+ codebook)</label>
+      <label class="field"><input type="checkbox" id="optNotes" checked /> Include notes (may contain PII)</label>
+      <label class="field"><input type="checkbox" id="optBehaviorMeta" checked /> Include behavior metadata in CSV</label>
+      <menu class="modal-actions">
+        <button value="cancel" class="btn ghost">Cancel</button>
+        <button id="doExportBtn" value="default" class="btn primary">Export</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Login / Switch User -->
+  <dialog id="loginModal" class="modal">
+    <div class="modal-body">
+      <h3>Choose or Create a User</h3>
+      <div id="accountList" class="account-list"></div>
+      <hr />
+      <h4>Create New</h4>
+      <label class="field">
+        <span>Display name</span>
+        <input id="newUserName" placeholder="e.g., Taechasith" />
+      </label>
+      <label class="field">
+        <span>Email (optional)</span>
+        <input id="newUserEmail" type="email" placeholder="you@example.com" />
+      </label>
+      <label class="field">
+        <span>PIN (optional, 4–12 digits)</span>
+        <input id="newUserPin" type="password" inputmode="numeric" />
+      </label>
+      <menu class="modal-actions">
+        <button id="cancelLogin" class="btn ghost">Close</button>
+        <button id="createUserBtn" class="btn primary">Create & Use</button>
+      </menu>
+    </div>
+  </dialog>
+
+  <!-- Ask for PIN -->
+  <dialog id="pinModal" class="modal">
+    <div class="modal-body">
+      <h3>Enter PIN</h3>
+      <p id="pinPrompt" class="muted"></p>
+      <label class="field">
+        <span>PIN</span>
+        <input id="pinInput" type="password" inputmode="numeric" />
+      </label>
+      <menu class="modal-actions">
+        <button id="cancelPin" class="btn ghost">Cancel</button>
+        <button id="confirmPin" class="btn primary">Unlock</button>
+      </menu>
+    </div>
+  </dialog>
+
   <!-- Reset confirm -->
   <dialog id="confirmModal" class="modal">
     <div class="modal-body">
-      <h3>Reset all data?</h3>
-      <p>This deletes every behavior and entry stored in your browser.</p>
+      <h3>Reset current user's data?</h3>
+      <p>This deletes all behaviors and entries for this user on this device.</p>
       <menu class="modal-actions">
         <button id="cancelReset" class="btn ghost">Cancel</button>
         <button id="confirmReset" class="btn danger">Delete</button>
