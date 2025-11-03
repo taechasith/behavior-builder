@@ -1,137 +1,118 @@
-# Behavior Builder (FBM):  
-Web-Based Tool for Quantitative Research in Cyborg Bahavior Formation
+# Behavior Builder (FBM):
+Web Instrument for Quantitative Study of Cyborg Habit Formation through the Fogg Behavior Model
 
 **Taechasith Kangkhuntod**  
-Python1 Module, Harbour.Space Institute of Technology @UTCC, 2025  
-[behavior-builder.vercel.app](https://behavior-builder.vercel.app/)
+Harbour.Space Institute of Technology @UTCC (Python1, 2025)  
+https://behavior-builder.vercel.app/
 
 ---
 
 ## Abstract
-
-**Background:**  
-Behavior change research increasingly leverages digital tools, but many self-tracking solutions risk bias, lack research-grade exports, or insufficiently account for the user’s cognitive coupling with technology—issues central to emerging fields such as cyborg psychology.
-
-**Objective:**  
-We present **Behavior Builder (FBM)**, an open-source, privacy-preserving web application and Python toolkit that enables users and researchers to log and analyze habit formation in line with the Fogg Behavior Model (FBM). The tool was developed as a final project for Python1 at Harbour.Space Institute of Technology @UTCC, inspired by the Consumer Behavior curriculum.
-
-**Methods:**  
-The system implements the FBM as a daily interactive graph, recording user-rated *motivation* and *ability* for target behaviors. A focus-first, bias-minimized interface is deployed: historical data are concealed until after each daily check-in, reducing anchoring and Hawthorne effects. Exports are structured for quantitative research (CSV/JSON). An accompanying Python script provides batch summary statistics and visualizations. The design foregrounds the cyborg psychology paradigm, treating the digital interface as an active participant in behavioral change.
-
-**Results:**  
-Behavior Builder was piloted publicly at [behavior-builder.vercel.app](https://behavior-builder.vercel.app/). The platform supports multi-user sessions, bias-aware input, and flexible data export for longitudinal analysis. The included research script automatically computes per-behavior success rates, current/longest streaks, and trendlines, enabling rapid hypothesis generation for behavioral intervention studies. All data remain client-side by default, ensuring privacy.
-
-**Conclusions:**  
-This tool enables rigorous, reproducible research into digital habit formation, while actively incorporating cybernetic feedback and cognitive extension principles from cyborg psychology. It is freely available for researchers, educators, and practitioners interested in the dynamics of motivation, ability, and digital nudging.
+**Background.** Digital self-tracking systems can enable rigorous observation of behavior change, yet many tools lack research-grade data structures, bias controls, and explicit operationalizations of theory.  
+**Objective.** This project presents **Behavior Builder (FBM)**, a client-side web instrument with a companion Python utility designed for quantitative studies of habit formation under the **Fogg Behavior Model (FBM)**, interpreted within a *cyborg psychology* framework in which human–device couplings shape cognition and action.  
+**Methods.** The instrument records daily **motivation** and **ability** (0–10) and a binary **execution** outcome (“did/yes|no”) per target behavior, time-stamped at entry. A **focus-first, bias-guarded UX** conceals historical data until the day’s report is committed, reducing anchoring and demand characteristics. A theory-consistent **FBM action boundary** \(m \ge 12 - a\) is encoded for labeling success-zone observations. Exports are tidy **CSV/JSON** with codebook; a **Python analysis script** computes per-behavior summaries (success rates, streaks), daily time series, and an optional A–M scatter with the FBM boundary.  
+**Results.** The instrument supports multi-behavior logging, time-aware visualization, reproducible exports, and local-only storage for privacy. The Python utility yields research-ready tables suitable for downstream analyses (e.g., logistic models of “did”, trends in A/M, and sensitivity to bias guards).  
+**Conclusions.** The project operationalizes FBM for reproducible, privacy-preserving digital studies and provides a minimal pipeline from in-browser data collection to quantitative analysis, aligning with cyborg psychology’s emphasis on human–technology co-regulation.
 
 ---
 
-## Introduction
+## 1. Introduction
+Quantitative study of habit formation increasingly relies on digital instruments. The **Fogg Behavior Model (FBM)** posits that behavior occurs when sufficient **motivation (M)** and **ability (A)** co-occur with an effective **prompt** [3]. Meanwhile, *cyborg psychology* frames technologies as cognitive and motivational scaffolds that participate in regulation loops [1,2]. Instruments that both **make theory observable** and **control common biases** (e.g., anchoring on prior values) are required for valid inference.
 
-Digital interventions for behavior change are ubiquitous, yet the interplay between humans and digital self-tracking technologies is understudied—especially from the standpoint of *cyborg psychology*, which treats the technology itself as a component of cognitive and motivational processes [1,2]. The Fogg Behavior Model (FBM) posits that successful behavior arises when motivation, ability, and an effective prompt converge [3]. However, user-facing tools often introduce bias or do not facilitate transparent data analysis.
-
-This project aims to bridge that gap, providing a system that is:
-
-- Research-friendly and privacy-first
-- Explicitly designed to minimize digital self-tracking bias
-- Accessible for both end-users and behavioral scientists
+**Project Contributions.**  
+1) A **client-side**, privacy-first web instrument that encodes FBM constructs and an action boundary for labeling observations.  
+2) A **bias-guarded input workflow** (focus-first) to mitigate anchoring/Hawthorne effects.  
+3) **Research-grade exports** (CSV/JSON + codebook) and a lightweight **Python analysis** utility compatible with introductory programming skills.
 
 ---
 
-## Methods
-
-### System Design
-
-Behavior Builder (FBM) consists of two main components:
-
-1. **Web Application**  
-    - *Multi-user local login*: Users can create accounts or use guest sessions, with all data stored client-side.
-    - *Focus-first UX*: Daily logs of motivation (0–10) and ability (0–10) for selected behaviors are entered before any prior data is revealed, to limit anchoring and self-fulfilling bias [4].
-    - *FBM Graph*: Visualizes progress on a motivation–ability plane with action boundaries, enabling both self-reflection and quantitative research.
-    - *Bias-reduction features*: History and graphs are blinded until new data is entered each day.
-    - *Export*: All data (including timestamps, notes, behavior metadata) can be exported as tidy CSV or JSON for external analysis.
-
-2. **Python Research Toolkit**  
-    - Reads exported CSV/JSON
-    - Outputs per-behavior and per-date summaries (success rates, streaks, averages)
-    - Optionally generates scatter plots (if `matplotlib` is available)
-    - Fully compatible with standard Python-1 skills
-
-### Public Deployment
-
-A live demo is available at:  
-[https://behavior-builder.vercel.app/](https://behavior-builder.vercel.app/)
-
-### Data Privacy
-
-No data leaves the user’s device by default. All processing, storage, and analysis occur locally unless the user opts to export data.
+## 2. Related Work
+Persuasive technology and behavioral design have long translated FBM into practical interventions [3]. Policy and HCI work emphasize *nudging* and bias awareness [4]. Cyborg-oriented perspectives describe human–device coupling and digital self-control tools as part of distributed cognition [1,2]. This project connects these strands by making FBM variables first-class data, adding bias controls, and enabling exportable, reproducible analyses.
 
 ---
 
-## Results
+## 3. Methods
 
-Behavior Builder was piloted with self-experimentation and in undergraduate classroom settings. The following outcomes were observed:
+### 3.1 Constructs and Operationalization
+- **Behavior (B):** User-defined target (e.g., “Read 1 page”).  
+- **Motivation (M):** Self-report integer \(0\!-\!10\).  
+- **Ability (A):** Self-report integer \(0\!-\!10\).  
+- **Execution (Did):** Binary yes/no for same-day attempt.  
+- **FBM Success-Zone Indicator:** \( \text{in\_zone} = 1 \) if \( m \ge 12 - a \), else 0.  
+- **Timestamping:** ISO date/time at entry; per-behavior lineage retained.
 
-- **User Experience:**  
-    - Users reported increased awareness of the *fluctuations* in their motivation and ability, consistent with FBM theory.
-    - The focus-first design minimized bias: users could not “game” their entries based on past trends.
-- **Research Utility:**  
-    - Exported data enabled rapid computation of success rates, habit streaks, and the impact of interventions (e.g., nudges or prompts).
-    - The provided Python tool generated publication-ready summaries in seconds.
+### 3.2 Bias Guards
+- **Focus-first input:** Historical A/M/Did and graphs are **hidden** until today’s report is saved (reduces anchoring and demand effects).  
+- **Private session option:** Encourages truthful reporting by easing privacy concerns (no server).
 
-**Example Outputs:**
+### 3.3 Instrument & Data Model
+The client application (HTML/CSS/JS) runs entirely in the browser (local or session storage). Export schema:
 
-- *Per-behavior success rate*: Percentage of days where behavior was successfully performed, and success within the FBM action zone.
-- *Longest streak*: Maximum consecutive days of success.
-- *Time series*: Daily trends in motivation and ability.
+- **CSV columns:** `user_id, behavior_id, behavior_title, date, time, datetime, motivation, ability, did, did_numeric, note, anchor, tiny`.  
+- **JSON package:** `{package_version, exported_at, user, prefs, behaviors[], entries[], codebook}`.
 
----
+### 3.4 Analysis Pipeline (Python Utility)
+Given CSV/JSON exports, the script:
+- Computes **per-behavior summaries:** \( \bar{M}, \bar{A} \), medians, **success rate** (Did==yes)/N, **in-zone success**, **current/longest streaks**, and date range.  
+- Produces **daily time series** aggregates (mean/median A/M, counts of Did and in-zone success).  
+- Optionally renders **A–M scatter** with the FBM line.
 
-## Discussion
-
-**Cyborg Psychology Implications:**  
-By foregrounding the device’s role in cognitive and motivational processes, Behavior Builder demonstrates a practical application of cyborg psychology [1,2]. The system’s bias-guarding UX, privacy-first philosophy, and exportability make it suitable for intervention research, n-of-1 studies, and digital wellness projects.
-
-**Limitations:**  
-- Self-reporting always carries potential for bias, though blinding past data can reduce this.
-- The tool does not (yet) automate reminders or integrate with external data sources.
-
-**Future Directions:**  
-- Integration with passive sensors or AI-driven feedback loops
-- Customizable nudges based on real-time analytics
-- Comparative studies with and without bias-blinding enabled
+These tables are suitable for:
+- Logistic or probit models of **Did** on A, M, in-zone indicator, time, or intervention flags.  
+- Slope/change-point analyses of A/M trajectories.  
+- AB/ABA designs examining **focus-first** vs **history-visible** modes (if enabled in future experiments).
 
 ---
 
-## Conclusion
-
-Behavior Builder (FBM) is an open, scientifically principled tool for digital behavior change research. Its design embodies the co-evolution of human and machine (“cyborg”) perspectives, and provides practical, exportable analytics for behavioral scientists, educators, and self-improvers.
+## 4. Implementation and Availability
+- **Public Demo:** https://behavior-builder.vercel.app/  
+- **Runtime:** Client-side only; no backend; exports initiated by the participant/researcher.  
+- **Privacy:** Data persist locally (or session-scoped); exports are explicit and user-controlled.
 
 ---
 
-## References
+## 5. Results (Instrument Capabilities)
+This project does not include a randomized evaluation; rather, it demonstrates:
+1) **Theory observability:** FBM boundary labeling enables immediate mapping from reports to model-consistent regions.  
+2) **Bias-aware workflow:** Focus-first input prevents pre-commit inspection of historical data.  
+3) **Reproducibility:** Tidy exports with codebook and a deterministic analysis script.  
+4) **Extensibility:** Additional predictors (e.g., prompt type, context tags) can be appended while retaining the core schema.
 
-1. Heersmink, R. (2017). *Distributed Cognition and Digital Self-Control Tools: A Cognitive-Integration Approach*. Philosophy & Technology, 30(2), 251–269.
-2. Lyngs, U. et al. (2020). *“I Visited My Habit Garden Everyday”: The Behavior Change Potential of a Virtual Garden for Improving Adherence to Digital Self-Control Tools*. CHI ’20.
-3. Fogg, B.J. (2009). *A Behavior Model for Persuasive Design*. In: Persuasive '09.
-4. Dolan, P. et al. (2012). *Mindspace: Influencing behaviour through public policy*. Institute for Government.
+---
+
+## 6. Discussion
+Positioned within **cyborg psychology**, the instrument treats the UI as an **active regulator**—not merely a passive recorder—by structuring attention (focus-first) and shaping reflection (post-commit visualization). This fosters ecological validity (participants use their own devices) while enabling **quantitative rigor** via structured data and transparent analysis.
+
+**Use cases.** N-of-1 studies, classroom interventions, pilot RCTs comparing prompts or micro-abilities, and consumer behavior investigations on the relative contributions of A vs M to execution.
+
+---
+
+## 7. Limitations and Threats to Validity
+- **Self-report bias:** Although focus-first reduces anchoring, self-report remains vulnerable to recall and social desirability effects.  
+- **Boundary simplification:** The linear action boundary is a practical heuristic; different tasks may exhibit non-linear thresholds.  
+- **Sampling bias:** Convenience samples and short study windows may limit generalizability.
+
+---
+
+## 8. Ethics and Privacy
+All storage and computation are local by default; exports are explicit and user-initiated. Researchers should secure exported files, minimize PII in notes, and follow institutional ethics guidance for consent and de-identification.
+
+---
+
+## 9. Data and Code
+- **Instrument (Web):** https://behavior-builder.vercel.app/  
+- **Exports:** CSV/JSON with codebook for direct import into statistical pipelines.  
+- **Analysis Utility:** Python script generating behavior-level summaries and date-level series.
+
+---
+
+## 10. References
+1. Heersmink, R. (2017). *Distributed Cognition and Digital Self-Control Tools: A Cognitive-Integration Approach.* Philosophy & Technology, 30(2), 251–269.  
+2. Lyngs, U., et al. (2020). *“I Visited My Habit Garden Everyday” …* CHI ’20.  
+3. Fogg, B. J. (2009). *A Behavior Model for Persuasive Design.* Persuasive ’09.  
+4. Dolan, P., et al. (2012). *MINDSPACE: Influencing Behaviour through Public Policy.* Institute for Government.
 
 ---
 
 ## Acknowledgements
-
-Developed by **Taechasith Kangkhuntod**  
-For Python1 Module (2025)  
-Inspired by the Consumer Behavior module (2025)  
-Harbour.Space Institute of Technology @UTCC 
-
----
-
-## Open Access
-
-**Try it:** [https://behavior-builder.vercel.app/](https://behavior-builder.vercel.app/)  
-**Source code:** [https://github.com/taechasith/behavior-builder](https://github.com/taechasith/behavior-builder)
-
----
-
-*For academic use, please cite this paper or the app’s URL.*
+The developer thanks **Vetit (Ve) Kanjaras** and **Rujipas (Due) Varathikul** for providing the assignment and coding instruction in the **Python1** module, and **Gary Van Broekhoven** for psychological and research guidance in the **Consumer Behavior** module (2025) at **Harbour.Space Institute of Technology @UTCC**.
